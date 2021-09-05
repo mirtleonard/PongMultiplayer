@@ -6,5 +6,8 @@
     <form  action="{% url 'logout_user' %}" method="get" id="log-out" >
       <button type="submit" class="btn btn-primary">Logout</button>
     </form>
+    <form  action="{% url 'search' user.username %}" method="get" id="log-out" >
+      <button type="submit" class="btn btn-primary">Search a room</button>
+    </form>
   </div>
 {%endblock%}

@@ -1,5 +1,5 @@
 """
-ASGI config for pongMultiplayer project.
+ASGI config for PongMultiplayer project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -9,8 +9,18 @@ https://docs.djangoproject.com/en/3.2/howto/deployment/asgi/
 
 import os
 
+from channels.auth import AuthMiddlewareStack
+from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
+import pong.routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pongMultiplayer.settings')
 
-application = get_asgi_application()
+application = ProtocolTypeRouter({
+    "http": get_asgi_application(),
+    "websocket": AuthMiddlewareStack(
+        URLRouter(
+            pong.routing.websocket_urlpatterns
+        )
+    ),
+})

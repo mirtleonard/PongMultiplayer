@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-r*3$b=)ux*1ts7%c1*$=)q52cpxg*u5^z-)=-0-5i0!vwuk$j0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['192.168.1.9', '127.0.0.1']
 
 
 # Application definition
@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels_presence',
+    'channels',
+    'pong',
     'user',
 ]
 
@@ -68,6 +71,7 @@ TEMPLATES = [
     },
 ]
 
+ASGI_APPLICATION = "pongMultiplayer.asgi.application"
 WSGI_APPLICATION = 'pongMultiplayer.wsgi.application'
 
 
@@ -81,6 +85,14 @@ DATABASES = {
     }
 }
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
