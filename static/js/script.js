@@ -1,15 +1,6 @@
 const roomName = JSON.parse(document.getElementById('room-name').textContent);
 const userName = JSON.parse(document.getElementById('user-name').textContent);
 
-let player = 1;
-
-function changePlayer() {
-  if (player)
-    player = 0;
-  else
-    player = 1;
-}
-
 const gameSocket = new WebSocket(
     'ws://'
     + window.location.host + '/'
@@ -19,30 +10,30 @@ const gameSocket = new WebSocket(
     + '/game/'
 );
 
-gameSocket.onmessage = function(e) {
-    const data = JSON.parse(e.data);
-    if (data.user_name != userName)
-      paddle[player ^ 1].speed = data.speed;
-};
-
-gameSocket.onclose = function(e) {
-    console.error('Game socket closed unexpectedly');
-};
-
-
+let currentPlayer = 0, gameOver = true, first = true;
 let canvas = document.querySelector('canvas');
 let width = canvas.width = 700;
 let height = canvas.height = 700;
 let board = canvas.getContext('2d');
 board.strokeStyle = 'white';
 board.fillStyle = 'white';
-let gameOver = false;
-//let player = [{}, {}];
+let player = [{}, {}];
 let paddle = [{},{}];
 let score = [0, 0];
 
+player[0] = {
+  score : 0,
+  ready : false,
+  user_name : userName,
+}
 
-paddle[player] = {
+player[1] = {
+  score : 0,
+  ready : false,
+  user_name : '',
+}
+
+paddle[currentPlayer] = {
   x : width - 30,
   y : height / 2 - 100,
   height : 100,
@@ -50,12 +41,12 @@ paddle[player] = {
   speed : 0,
 }
 
-paddle[player ^ 1] = {
+paddle[currentPlayer ^ 1] = {
   x : 20,
   y : height / 2 - 100,
   height: 100,
-  speed: 10,
   width: 10,
+  speed: 0,
 }
 
 let ball = {
@@ -66,14 +57,59 @@ let ball = {
   vy : 5,
 }
 
-start();
+
+function changeState() {
+  player[currentPlayer].ready = !player[currentPlayer].ready;
+  if (!player[currentPlayer].ready)
+    gameOver = true;
+  console.log(player[currentPlayer].ready, player[currentPlayer ^ 1].ready, 'aici');// ? "I'm not ready!" : "I'm ready!"));
+  document.querySelector('button').innerHTML = player[currentPlayer].ready ? "I'm not ready!" : "I'm ready!";
+  gameSocket.send(JSON.stringify({
+      user_name : userName,
+      player : currentPlayer,
+      ready : player[currentPlayer].ready,
+      speed : paddle[currentPlayer].speed,
+  }));
+}
+
+gameSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    if (data.user_name != userName) {
+      if (data.player == currentPlayer) {
+        currentPlayer ^= 1;
+        player[currentPlayer].ready = player[currentPlayer ^ 1].ready;
+        player[currentPlayer].user_name = userName;
+        player[currentPlayer ^ 1].user_name = data.user_name;
+      }
+      player[currentPlayer ^ 1].user_name = data.user_name;
+      paddle[currentPlayer ^ 1].speed = data.speed;
+      player[currentPlayer ^ 1].ready = data.ready;
+      if (first) {
+        gameSocket.send(JSON.stringify({
+          user_name : userName,
+          player : currentPlayer,
+          ready : player[currentPlayer].ready,
+          speed : paddle[currentPlayer].speed,
+        }));
+        first = false;
+      }
+    }
+    console.log(player[currentPlayer ^ 1].ready, player[currentPlayer].ready, gameOver)
+    if (player[currentPlayer ^ 1].ready && player[currentPlayer].ready && gameOver) {
+        gameOver = false;
+        start();
+      }
+};
+
+gameSocket.onclose = function(e) {
+    console.error('Game socket closed unexpectedly');
+};
 
 function start() {
   ball.x = width / 2;
   ball.y = height / 2;
   ball.vx = 5;
   ball.vy = 0;
-  gameOver = false;
   move();
 }
 
@@ -96,46 +132,47 @@ function collision(obj) {
 function move() {
   update();
 	if (ball.radius + ball.x > width) {
-    score[player]++;
-    //gameOver = true;
+    player[1].score++;
     ball.vx = -ball.vx;
-    document.querySelector('h3').innerHTML = 'Score ' + score[player] + ' - ' + score[player ^ 1];
+    changeState();
+    player[currentPlayer ^ 1].ready = false;
+    document.querySelector('h3').innerHTML = player[currentPlayer].user_name + ': ' + player[currentPlayer].score + ' - ' + player[currentPlayer ^ 1].user_name + ': ' + player[currentPlayer ^ 1].score;
   }
 	if (ball.x - ball.radius < 0) {
-    score[player ^ 1]++;
+    player[0].score++;
     ball.vx = -ball.vx;
-    //gameOver = true;
-    document.querySelector('h3').innerHTML = 'Score ' + score[player] + ' - ' + score[player ^ 1];
+    changeState();
+    player[currentPlayer ^ 1].ready = false;
+    document.querySelector('h3').innerHTML = player[currentPlayer].user_name + ': ' + player[currentPlayer].score + ' - ' + player[currentPlayer ^ 1].user_name + ': ' + player[currentPlayer ^ 1].score;
   }
-  if (!collision(paddle[player]))
-    collision(paddle[player ^ 1]);
+  if (!collision(paddle[currentPlayer]))
+    collision(paddle[currentPlayer ^ 1]);
 	if (ball.y + ball.radius > height)
 		ball.vy = -ball.vy;
 	if (ball.y - ball.radius < 0)
 		ball.vy = -ball.vy;
 	ball.x = ball.x + ball.vx;
 	ball.y = ball.y + ball.vy;
-  if (paddle[player].speed > 0)
-    paddle[player].y = Math.min(paddle[player].y + paddle[player].speed, height - paddle[player].height);
+  if (paddle[currentPlayer].speed > 0)
+    paddle[currentPlayer].y = Math.min(paddle[currentPlayer].y + paddle[currentPlayer].speed, height - paddle[currentPlayer].height);
   else
-    paddle[player].y = Math.max(paddle[player].y + paddle[player].speed, 0);
-  console.log(paddle[player ^ 1].speed);
-  if (paddle[player ^ 1].speed > 0)
-    paddle[player ^ 1].y = Math.min(paddle[player ^ 1].y + paddle[player ^ 1].speed, height - paddle[player ^ 1].height);
+    paddle[currentPlayer].y = Math.max(paddle[currentPlayer].y + paddle[currentPlayer].speed, 0);
+  if (paddle[currentPlayer ^ 1].speed > 0)
+    paddle[currentPlayer ^ 1].y = Math.min(paddle[currentPlayer ^ 1].y + paddle[currentPlayer ^ 1].speed, height - paddle[currentPlayer ^ 1].height);
   else
-    paddle[player ^ 1].y = Math.max(paddle[player ^ 1].y + paddle[player ^ 1].speed, 0);
-  //if (ball.y > paddle[player ^ 1].y + paddle[player ^ 1].height / 2)
-  //  paddle[player ^ 1].y = Math.min(paddle[player ^ 1].y + paddle[player ^ 1].speed, height - paddle[player ^ 1].height);
-  //else if (ball.y < paddle[player ^ 1].y)
-  //  paddle[player ^ 1].y = Math.max(paddle[player ^ 1].y - paddle[player ^ 1].speed, 0);
-  if (!gameOver)
+    paddle[currentPlayer ^ 1].y = Math.max(paddle[currentPlayer ^ 1].y + paddle[currentPlayer ^ 1].speed, 0);
+  //if (ball.y > paddle[currentPlayer ^ 1].y + paddle[currentPlayer ^ 1].height / 2)
+  //  paddle[currentPlayer ^ 1].y = Math.min(paddle[currentPlayer ^ 1].y + paddle[currentPlayer ^ 1].speed, height - paddle[currentPlayer ^ 1].height);
+  //else if (ball.y < paddle[currentPlayer ^ 1].y)
+  //  paddle[currentPlayer ^ 1].y = Math.max(paddle[currentPlayer ^ 1].y - paddle[currentPlayer ^ 1].speed, 0);
+  if (!gameOver && player[currentPlayer].ready && player[currentPlayer ^ 1].ready)
     requestAnimationFrame(move);
 }
 
 function update() {
     board.clearRect(0, 0, width, height);
-    draw(paddle[player]);
-    draw(paddle[player ^ 1]);
+    draw(paddle[currentPlayer]);
+    draw(paddle[currentPlayer ^ 1]);
     draw(ball);
 }
 
@@ -155,24 +192,25 @@ document.addEventListener('keyup', stop_moving);
 
 function start_moving(event) {
     if (event.key == 'ArrowDown')
-      paddle[player].speed = 10;
+      paddle[currentPlayer].speed = 10;
     else if (event.key == 'ArrowUp')
-      paddle[player].speed = -10;
+      paddle[currentPlayer].speed = -10;
     gameSocket.send(JSON.stringify({
         user_name : userName,
-        speed : paddle[player].speed
+        player : currentPlayer,
+        ready : player[currentPlayer].ready,
+        speed : paddle[currentPlayer].speed,
     }));
-
-    if (gameOver)
-      start();
 }
 
 function stop_moving(event) {
   if (event.key == 'ArrowUp' || event.key == 'ArrowDown') {
-    paddle[player].speed = 0;
+    paddle[currentPlayer].speed = 0;
     gameSocket.send(JSON.stringify({
-        speed : paddle[player].speed,
         user_name : userName,
+        player : currentPlayer,
+        ready : player[currentPlayer].ready,
+        speed : paddle[currentPlayer].speed,
     }));
   }
 }
