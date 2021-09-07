@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'channels_presence',
     'channels',
     'pong',
-    'user',
 ]
 
 MIDDLEWARE = [
