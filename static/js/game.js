@@ -21,6 +21,7 @@ let width = canvas.width = 700;
 let board = canvas.getContext('2d');
 board.strokeStyle = 'white';
 board.fillStyle = 'white';
+
 let player = [
   {
     'userName' : userName,
@@ -79,7 +80,8 @@ gameSocket.onmessage = function(e) {
     player[current ^ 1].paddle.y = data.users[current ^ 1].paddle_y;
     ball.x = data.ball_x;
     ball.y = data.ball_y;
-
+    if (!(player[current].ready && player[current ^ 1].ready))
+      gameOver = true
     if (player[current].ready && player[current ^ 1].ready && gameOver) {
       gameOver = false;
       update();

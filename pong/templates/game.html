@@ -1,5 +1,6 @@
 {%extends "base.html" %}
 {%block content%}
+    <div class="d-flex flex-row">
       <div class="container">
         <div class="m-3 d-flex justify-content-center">
           <h3> Waiting for player </h3>
@@ -11,8 +12,15 @@
           <button class="btn btn-success" onclick="changeState()"> I'm ready! </button>
         </div>
       </div>
+      <div id="chat" class=" container d-flex justify-conetent-center flex-column" style="width:400px; height:400px; margin-top:10%;">
+        <textarea id="chat-log" cols="100" disabled rows="20"></textarea>
+        <input class="input-group-text my-2" id="chat-message-input" type="text" size="100">
+        <input class="btn btn-primary" id="chat-message-submit" type="button" value="Send">
+      </div>
+    </div>
     {{ room_name|json_script:"room-name" }}
     {{ user_name|json_script:"user-name" }}
     {% load static %}
-    <script src="{% static 'js/script.js' %}"> </script>
+    <script src="{% static 'js/game.js' %}"> </script>
+    <script src="{% static 'js/chat.js' %}"> </script>
 {%endblock%}

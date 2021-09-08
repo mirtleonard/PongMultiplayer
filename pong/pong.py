@@ -1,4 +1,5 @@
 import math
+import random
 
 class Paddle:
     def __init__(self, x, y, height, width):
@@ -24,6 +25,8 @@ class Ball:
     def __init__(self, x, y):
         self.radius = 10
         self.vx = 5
+        if random.random() >= 0.5:
+            self.vx *= -1
         self.vy = 0
         self.x = x
         self.y = y
@@ -68,19 +71,13 @@ class Game:
 
     def check(self):
         if self.ball.radius + self.ball.x > self.width:
+            self.ball = Ball(self.width / 2, self.height / 2)
             self.player[0].score += 1
-            self.game_over()
         if self.ball.x - self.ball.radius < 0:
+            self.ball = Ball(self.width / 2, self.height / 2)
             self.player[1].score += 1
-            self.game_over()
         self.collision(self.paddle[0])
         self.collision(self.paddle[1])
-
-
-    def game_over(self):
-        self.player[0].ready = False
-        self.player[1].ready = False
-        self.ball = Ball(self.width / 2, self.height / 2)
 
     def update(self):
         self.check()
