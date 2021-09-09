@@ -67,7 +67,7 @@ class Game:
         if object.x >= self.ball.x:
             direction = -1
         self.ball.vx = math.cos(angle) * 10 * direction
-        self.ball.vy = math.sin(angle) * 10 * direction
+        self.ball.vy = math.sin(angle) * 10
 
     def check(self):
         if self.ball.radius + self.ball.x > self.width:
