@@ -1,11 +1,11 @@
 {% if messages %}
   {% for message in messages %}
     <div class = "alert {{message.tags}} m-2" id="msg" role="alert">
-        {{ message }}
+      {{ message }}
     </div>
     <script>
-      setTimeout(function(){
-          $('#msg').remove();
+      setTimeout(function() {
+        $('#msg').remove();
         }
       }, 2000)
     </script>

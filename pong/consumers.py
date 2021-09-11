@@ -12,11 +12,8 @@ games = {}
 class ChatConsumer(WebsocketConsumer):
     def connect(self):
         self.user_name = self.scope['url_route']['kwargs']['user_name']
-        for x in Room.objects.all():
-            print(x.__dict__)
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = 'chat_%s' % self.room_name
-        Room.objects.add(self.room_name, self.user_name)
 
         #Join room group
         async_to_sync(self.channel_layer.group_add)(
@@ -81,9 +78,9 @@ class GameConsumer(WebsocketConsumer):
     def disconnect(self, close_code):
         Room.objects.remove(self.room_name, self.user_name)
         room = Room.objects.get(channel_name = self.room_name)
+        users.pop(str(self.user_name))
         if room.get_users().count() + room.get_anonymous_count():
             room.delete()
-            users.pop(self.user_name)
             games.pop(self.room_name)
         async_to_sync(self.channel_layer.group_discard)(
             self.room_group_name,
